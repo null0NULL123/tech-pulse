@@ -12,26 +12,6 @@ from models import Digest, FeedResult
 
 from .base import BaseProcessor
 
-# Default prompt (fallback if no prompt file is found)
-DEFAULT_PROMPT = """你是一位资深技术编辑，专注于将英文技术博客文章转化为高质量的中文技术周报。
-
-## 输出要求
-1. **开头写"本周看点"**：用 ## 标题，2-3 条核心洞察，概括本周最重要的趋势和关联
-2. **按主题分组**，每组用 ## 标题
-3. 每篇文章格式：**加粗标题** [来源名]，然后 2-3 句正文概括
-4. 来源标注用方括号
-5. 保留关键术语的英文原文
-6. 突出"为什么这个重要"
-7. 每篇附上原文链接，格式为 [原文链接](URL)
-8. 不要用翻译腔，用自然流畅的中文表达
-9. 主题分类不要超过 5 个
-
-## 输出格式（严格遵守）
-- 标题: # 一级标题, ## 二级标题
-- 文章格式: **标题** [来源] + 正文 + [原文链接](URL)
-- 每篇文章之间用空行分隔
-"""
-
 # Prompts directory (relative to project root)
 PROMPTS_DIR = Path(__file__).parent.parent / "prompts"
 
@@ -43,12 +23,18 @@ def load_prompt(name: str = "tech-weekly") -> str:
         name: Prompt filename without extension (e.g., "tech-weekly", "finance-weekly")
 
     Returns:
-        The prompt text, or DEFAULT_PROMPT if file not found.
+        The prompt text.
+
+    Raises:
+        FileNotFoundError: If the prompt file does not exist.
     """
     filepath = PROMPTS_DIR / f"{name}.md"
-    if filepath.exists():
-        return filepath.read_text(encoding="utf-8").strip()
-    return DEFAULT_PROMPT
+    if not filepath.exists():
+        raise FileNotFoundError(
+            f"Prompt file not found: {filepath}. "
+            f"Available prompts: {[f.stem for f in PROMPTS_DIR.glob('*.md')]}"
+        )
+    return filepath.read_text(encoding="utf-8").strip()
 
 
 class SummarizeProcessor(BaseProcessor):
@@ -66,14 +52,12 @@ class SummarizeProcessor(BaseProcessor):
         self._api_base_url = api_base_url or os.environ["API_BASE_URL"]
         self._model = model or os.environ.get("MODEL_NAME", "deepseek-chat")
 
-        # Prompt loading priority: explicit prompt > prompt_name file > env > default
+        # Prompt loading priority: explicit prompt > prompt_name > env > "tech-weekly"
         if prompt:
             self._system_prompt = prompt
-        elif prompt_name:
-            self._system_prompt = load_prompt(prompt_name)
         else:
-            env_prompt = os.environ.get("PROMPT_NAME", "tech-weekly")
-            self._system_prompt = load_prompt(env_prompt)
+            name = prompt_name or os.environ.get("PROMPT_NAME", "tech-weekly")
+            self._system_prompt = load_prompt(name)
 
     def process(
         self,
