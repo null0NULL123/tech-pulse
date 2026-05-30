@@ -1,6 +1,7 @@
 """Configuration loading for Tech Pipeline.
 
 Handles .env loading, environment variable access, and feeds.json parsing.
+All default values and project-wide constants are defined here as single source of truth.
 """
 
 from __future__ import annotations
@@ -11,7 +12,89 @@ from pathlib import Path
 
 from models import SourceConfig
 
-# Required environment variables that must be present after load_env()
+# ---------------------------------------------------------------------------
+# Project-wide constants (single source of truth)
+# ---------------------------------------------------------------------------
+
+# Paths
+DEFAULT_FEEDS_PATH = "feeds.json"
+DEFAULT_DB_PATH = "knowledge/pulse.db"
+DEFAULT_OUTPUT_DIR = "output"
+DEFAULT_ENV_PATH = ".env"
+
+# Source defaults
+DEFAULT_SOURCE_LANG = "en"
+DEFAULT_SOURCE_TYPE = "rss"
+
+# Summary defaults
+DEFAULT_LANGUAGE = "zh-CN"
+DEFAULT_DAYS = 7
+DEFAULT_PROMPT_NAME = "tech-weekly"
+
+# LLM parameters
+DEFAULT_LLM_TEMPERATURE = 0.3
+DEFAULT_LLM_MAX_TOKENS = 4096
+
+# Text truncation limits
+SUMMARY_TRUNCATE_LENGTH = 300
+RSS_SUMMARY_TRUNCATE_LENGTH = 500
+WEB_SUMMARY_TRUNCATE_LENGTH = 500
+CONTEXT_SUMMARY_TRUNCATE_LENGTH = 150
+CONTEXT_TITLE_TRUNCATE_LENGTH = 200
+EMBEDDING_MAX_INPUT_LENGTH = 2000
+
+# Hash
+HASH_TRUNCATE_LENGTH = 16
+
+# HTTP
+HTTP_TIMEOUT = 15
+HTTP_USER_AGENT = "Mozilla/5.0 (compatible; Signal/1.0)"
+
+# Email
+EMAIL_MAX_RETRIES = 3
+EMAIL_RETRY_DELAY = 10
+EMAIL_SMTP_TIMEOUT = 30
+
+# Fetch concurrency
+FETCH_MAX_WORKERS = 8
+
+# Knowledge / semantic search
+DEFAULT_EMBEDDING_DIM = 2560
+RISING_TOPIC_MULTIPLIER = 1.5
+RISING_TOPIC_MIN_COUNT = 2
+MAX_RISING_TOPICS = 5
+MAX_TREND_TOPICS = 10
+MAX_SEMANTIC_QUERIES = 10
+MAX_KEYWORD_SEARCH = 5
+MIN_KEYWORD_LENGTH = 3
+
+# Locale strings
+LOCALE = {
+    "email_subject": "Signal 周报",
+    "email_footer": "由 Signal 自动生成 | Powered by AI",
+    "email_ai_tag": "AI 自动摘要",
+    "pages_subtitle": "从噪音中提取信号",
+    "pages_description": "每周自动从高质量信息源抓取内容，用 AI 生成精炼摘要。",
+    "pages_footer": "由 Signal 自动生成",
+    "pages_history_title": "历史周报",
+    "pages_back": "← 返回目录",
+    "trend_header": "历史趋势参考（供摘要参考，不输出到周报中）",
+    "trend_rising": "上升趋势话题",
+    "trend_frequent": "近 3 个月高频话题",
+    "related_header": "相关历史文章参考（供摘要参考，不输出到周报中）",
+    "related_intro": "以下是知识库中与本周文章相关的历史内容，可用于补充背景和引用。",
+    "no_articles": "本周所有订阅源均无新文章发布。",
+    "fetch_failed": "拉取失败",
+    "no_new_articles": "本周无新文章",
+    "articles_collected": "篇",
+    "week_header": "以下是本周（最近 {days} 天）从 {sources} 个技术博客收集到的 {count} 篇新文章。",
+    "week_prompt": "请生成一份中文技术周报。目标语言: {language}",
+}
+
+# ---------------------------------------------------------------------------
+# Required environment variables
+# ---------------------------------------------------------------------------
+
 _REQUIRED_ENV_VARS = [
     "API_BASE_URL",
     "API_KEY",
@@ -23,80 +106,76 @@ _REQUIRED_ENV_VARS = [
     "SMTP_RECEIVER",
 ]
 
-_DEFAULT_FEEDS_PATH = "feeds.json"
+
+# ---------------------------------------------------------------------------
+# Environment loading
+# ---------------------------------------------------------------------------
 
 
-def load_env(env_path: str = ".env") -> None:
-    """Load variables from a .env file into os.environ.
-
-    Parses simple KEY=VALUE lines, ignoring comments and blanks.
-    Does NOT override variables already set in the environment.
-
-    Raises:
-        EnvironmentError: If any required variable is missing after loading.
-    """
-    path = Path(env_path)
+def load_env(env_path: str | None = None) -> None:
+    """Load .env file into os.environ. Does NOT override existing vars."""
+    path = Path(env_path or os.environ.get("ENV_PATH", DEFAULT_ENV_PATH))
     if path.exists():
         for raw_line in path.read_text(encoding="utf-8").splitlines():
             line = raw_line.strip()
-            if not line or line.startswith("#"):
-                continue
-            if "=" not in line:
+            if not line or line.startswith("#") or "=" not in line:
                 continue
             key, _, value = line.partition("=")
-            key = key.strip()
-            value = value.strip()
-            # Don't override existing env vars
+            key, value = key.strip(), value.strip()
             if key and key not in os.environ:
                 os.environ[key] = value
 
-    # Validate required vars
     missing = [v for v in _REQUIRED_ENV_VARS if not os.environ.get(v)]
     if missing:
-        raise EnvironmentError(
-            f"Missing required environment variables: {', '.join(missing)}"
-        )
+        raise EnvironmentError(f"Missing required environment variables: {', '.join(missing)}")
 
 
 def get_env(key: str, default: str = "") -> str:
-    """Get an environment variable with a default fallback."""
     return os.environ.get(key, default)
 
 
-def load_sources(feeds_path: str = _DEFAULT_FEEDS_PATH) -> list[SourceConfig]:
-    """Load feed sources from a JSON file into SourceConfig objects.
+def get_int(key: str, default: int) -> int:
+    return int(os.environ.get(key, str(default)))
 
-    Backward compatible with the current feeds.json format:
-    [{"name": "...", "url": "...", "lang": "en"}, ...]
 
-    Extra keys (source_type, enabled, tags) are optional and use defaults.
-    """
-    path = Path(feeds_path)
+def get_float(key: str, default: float) -> float:
+    return float(os.environ.get(key, str(default)))
+
+
+# ---------------------------------------------------------------------------
+# Feeds loading
+# ---------------------------------------------------------------------------
+
+
+def load_sources(feeds_path: str | None = None) -> list[SourceConfig]:
+    """Load feed sources from a JSON file."""
+    path = Path(feeds_path or get_env("FEEDS_PATH", DEFAULT_FEEDS_PATH))
     if not path.exists():
         return []
 
     raw = json.loads(path.read_text(encoding="utf-8"))
-    sources: list[SourceConfig] = []
-
-    for item in raw:
-        sources.append(SourceConfig(
+    return [
+        SourceConfig(
             name=item.get("name", ""),
             url=item.get("url", ""),
-            lang=item.get("lang", "en"),
-            source_type=item.get("source_type", "rss"),
+            lang=item.get("lang", DEFAULT_SOURCE_LANG),
+            source_type=item.get("source_type", DEFAULT_SOURCE_TYPE),
             enabled=item.get("enabled", True),
             tags=item.get("tags", []),
             metadata=item.get("metadata", {}),
-        ))
+        )
+        for item in raw
+    ]
 
-    return sources
+
+# ---------------------------------------------------------------------------
+# Typed accessors
+# ---------------------------------------------------------------------------
 
 
 def get_summary_days() -> int:
-    """Return the number of days to look back for article summaries."""
-    return int(get_env("SUMMARY_DAYS", "7"))
+    return get_int("SUMMARY_DAYS", DEFAULT_DAYS)
 
 
 def get_summary_language() -> str:
-    """Return the target language for digest generation."""
-    return get_env("SUMMARY_LANGUAGE", "zh-CN")
+    return get_env("SUMMARY_LANGUAGE", DEFAULT_LANGUAGE)

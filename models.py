@@ -15,8 +15,8 @@ class SourceConfig:
 
     name: str
     url: str
-    lang: str = "en"
-    source_type: str = "rss"
+    lang: str = "en"        # default from config.DEFAULT_SOURCE_LANG
+    source_type: str = "rss"  # default from config.DEFAULT_SOURCE_TYPE
     enabled: bool = True
     tags: list[str] = field(default_factory=list)
     metadata: dict = field(default_factory=dict)  # source-type specific config (CSS selectors, etc.)
@@ -57,7 +57,7 @@ class Digest:
     content: str = ""
     article_count: int = 0
     week: str = ""
-    language: str = "zh-CN"
+    language: str = "zh-CN"  # default from config.DEFAULT_LANGUAGE
     created_at: datetime = field(default_factory=lambda: datetime.now(timezone.utc))
     metadata: dict = field(default_factory=dict)
 

@@ -14,19 +14,17 @@ log = logging.getLogger("signal")
 class FileChannel(BaseChannel):
     """Save digest to a local markdown file."""
 
-    def __init__(self, output_dir: str = "output") -> None:
-        self.output_dir = output_dir
+    def __init__(self, output_dir: str | None = None) -> None:
+        from config import get_env, DEFAULT_OUTPUT_DIR
+        self.output_dir = output_dir or get_env("OUTPUT_DIR", DEFAULT_OUTPUT_DIR)
 
     @property
     def name(self) -> str:
         return "file"
 
     def send(self, digest: Digest) -> bool:
-        """Save digest content to output/signal-YYYY-MM-DD.md. Returns True on success."""
         os.makedirs(self.output_dir, exist_ok=True)
-        filename = f"signal-{datetime.now().strftime('%Y-%m-%d')}.md"
-        filepath = os.path.join(self.output_dir, filename)
-
+        filepath = os.path.join(self.output_dir, f"signal-{datetime.now().strftime('%Y-%m-%d')}.md")
         try:
             with open(filepath, "w", encoding="utf-8") as f:
                 f.write(digest.content)

@@ -11,38 +11,27 @@ from __future__ import annotations
 
 import argparse
 import logging
-import os
 import sys
 
-from config import load_env, load_sources, get_summary_days, get_summary_language
-from models import SourceConfig
+from config import (
+    DEFAULT_FEEDS_PATH,
+    DEFAULT_PROMPT_NAME,
+    load_env,
+    load_sources,
+    get_summary_days,
+    get_summary_language,
+)
 from pipeline import Pipeline, create_source
-from sources.base import BaseSource
 
 log = logging.getLogger("signal")
 
 
-# ---------------------------------------------------------------------------
-# Logging
-# ---------------------------------------------------------------------------
-
-
 def setup_logging(verbose: bool = False) -> None:
-    """Configure root logging for CLI usage.
-
-    *verbose* switches the level from INFO to DEBUG.
-    """
-    level = logging.DEBUG if verbose else logging.INFO
     logging.basicConfig(
-        level=level,
+        level=logging.DEBUG if verbose else logging.INFO,
         format="%(asctime)s [%(levelname)s] %(message)s",
         datefmt="%Y-%m-%d %H:%M:%S",
     )
-
-
-# ---------------------------------------------------------------------------
-# Sub-commands
-# ---------------------------------------------------------------------------
 
 
 def cmd_run(args: argparse.Namespace) -> None:
@@ -60,21 +49,14 @@ def cmd_run(args: argparse.Namespace) -> None:
         log.error(f"No sources found in {args.feeds}")
         sys.exit(1)
 
-    days = args.days or get_summary_days()
-    language = args.language or get_summary_language()
-
-    prompt_name = args.profile or os.environ.get("PROMPT_NAME", "tech-weekly")
-
-    pipeline = Pipeline(
+    Pipeline(
         sources=sources,
         storage=KnowledgeStorage(),
         channels=[FileChannel(), EmailChannel(), GitHubPagesChannel()],
-        summarize_processor=SummarizeProcessor(prompt_name=prompt_name),
-        days=days,
-        language=language,
-    )
-
-    pipeline.run()
+        summarize_processor=SummarizeProcessor(prompt_name=args.profile),
+        days=args.days or get_summary_days(),
+        language=args.language or get_summary_language(),
+    ).run()
     log.info("Done!")
 
 
@@ -89,15 +71,11 @@ def cmd_fetch(args: argparse.Namespace) -> None:
         log.error(f"No sources found in {args.feeds}")
         sys.exit(1)
 
-    days = args.days or get_summary_days()
-
-    pipeline = Pipeline(
+    results = Pipeline(
         sources=sources,
         storage=KnowledgeStorage(),
-        days=days,
-    )
-
-    results = pipeline.fetch_only()
+        days=args.days or get_summary_days(),
+    ).fetch_only()
 
     total = sum(len(r.entries) for r in results if r.ok)
     errors = [r.config.name for r in results if not r.ok]
@@ -108,83 +86,60 @@ def cmd_fetch(args: argparse.Namespace) -> None:
 
 def cmd_discover(args: argparse.Namespace) -> None:
     """Discover available sub-sources from configured feeds."""
+    from sources.base import BaseSource
+
     sources = load_sources(args.feeds)
     if not sources:
         log.error(f"No sources found in {args.feeds}")
         sys.exit(1)
 
-    for config in sources:
+    for cfg in sources:
         try:
-            src: BaseSource = create_source(config)
+            src: BaseSource = create_source(cfg)
             discovered = src.discover()
             if discovered:
-                log.info(f"{config.name}: discovered {len(discovered)} sub-sources")
+                log.info(f"{cfg.name}: discovered {len(discovered)} sub-sources")
                 for sub in discovered:
                     log.info(f"  - {sub.name} ({sub.url})")
             else:
-                log.info(f"{config.name}: no sub-sources")
+                log.info(f"{cfg.name}: no sub-sources")
         except Exception as exc:
-            log.warning(f"{config.name}: discovery failed - {exc}")
-
-
-# ---------------------------------------------------------------------------
-# Argument parsing
-# ---------------------------------------------------------------------------
+            log.warning(f"{cfg.name}: discovery failed - {exc}")
 
 
 def _build_parser() -> argparse.ArgumentParser:
-    """Build the top-level argument parser with subcommands."""
     parser = argparse.ArgumentParser(
         prog="signal",
         description="Signal - RSS weekly digest with AI summary and email delivery",
     )
-    parser.add_argument(
-        "-v", "--verbose",
-        action="store_true",
-        default=False,
-        help="Enable debug logging",
-    )
-    parser.add_argument(
-        "--feeds",
-        default="feeds.json",
-        help="Path to feeds.json (default: feeds.json)",
-    )
+    parser.add_argument("-v", "--verbose", action="store_true", help="Enable debug logging")
+    parser.add_argument("--feeds", default=None, help=f"Path to feeds.json (default: {DEFAULT_FEEDS_PATH})")
 
     sub = parser.add_subparsers(dest="command", help="Available commands")
 
-    # -- run --
     p_run = sub.add_parser("run", help="Full pipeline: fetch + summarize + deliver")
-    p_run.add_argument("--days", type=int, default=None, help="Days of articles to fetch (default: from env)")
-    p_run.add_argument("--language", default=None, help="Target language for digest (default: from env)")
-    p_run.add_argument("--profile", default=None, help="Prompt profile name (default: tech-weekly)")
+    p_run.add_argument("--days", type=int, default=None, help="Days of articles to fetch")
+    p_run.add_argument("--language", default=None, help="Target language for digest")
+    p_run.add_argument("--profile", default=None, help=f"Prompt profile name (default: {DEFAULT_PROMPT_NAME})")
 
-    # -- fetch --
     p_fetch = sub.add_parser("fetch", help="Fetch and store articles only")
-    p_fetch.add_argument("--days", type=int, default=None, help="Days of articles to fetch (default: from env)")
+    p_fetch.add_argument("--days", type=int, default=None, help="Days of articles to fetch")
 
-    # -- discover --
     sub.add_parser("discover", help="Discover sub-sources from configured feeds")
 
     return parser
 
 
 def main() -> None:
-    """Entry point for the CLI."""
     parser = _build_parser()
     args = parser.parse_args()
-
     setup_logging(verbose=args.verbose)
 
     if args.command is None:
         parser.print_help()
         sys.exit(0)
 
-    commands = {
-        "run": cmd_run,
-        "fetch": cmd_fetch,
-        "discover": cmd_discover,
-    }
-    commands[args.command](args)
+    {"run": cmd_run, "fetch": cmd_fetch, "discover": cmd_discover}[args.command](args)
 
 
 if __name__ == "__main__":
