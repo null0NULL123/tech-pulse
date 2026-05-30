@@ -17,7 +17,7 @@ log = logging.getLogger("signal")
 
 def _docs_dir() -> Path:
     env_dir = os.environ.get("GITHUB_PAGES_DIR", "")
-    return Path(env_dir) if env_dir else Path(__file__).parent.parent / "docs"
+    return Path(env_dir) if env_dir else Path(__file__).parent.parent / "site"
 
 
 class GitHubPagesChannel(BaseChannel):
