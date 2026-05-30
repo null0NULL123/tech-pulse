@@ -38,7 +38,7 @@ def setup_logging(verbose: bool = False) -> None:
 def cmd_run(args: argparse.Namespace) -> None:
     """Run the full pipeline: fetch -> dedup -> save -> summarize -> deliver."""
     load_env()
-    validate_env(include_smtp=not args.no_email)
+    validate_env(include_smtp=args.email)
 
     from channels.file import FileChannel
     from channels.github_pages import GitHubPagesChannel
@@ -51,7 +51,7 @@ def cmd_run(args: argparse.Namespace) -> None:
         sys.exit(1)
 
     channels: list = [FileChannel(), GitHubPagesChannel()]
-    if not args.no_email:
+    if args.email:
         from channels.email import EmailChannel
         channels.append(EmailChannel())
 
@@ -127,7 +127,7 @@ def _build_parser() -> argparse.ArgumentParser:
     p_run.add_argument("--days", type=int, default=None, help="Days of articles to fetch")
     p_run.add_argument("--language", default=None, help="Target language for digest")
     p_run.add_argument("--profile", default=None, help=f"Prompt profile name (default: {DEFAULT_PROMPT_NAME})")
-    p_run.add_argument("--no-email", action="store_true", help="Skip email delivery (use with GitHub Pages / file output only)")
+    p_run.add_argument("--email", action="store_true", help="Enable email delivery (requires SMTP config in .env)")
 
     p_fetch = sub.add_parser("fetch", help="Fetch and store articles only")
     p_fetch.add_argument("--days", type=int, default=None, help="Days of articles to fetch")

@@ -114,7 +114,7 @@ Fork 项目后，在仓库 Settings → Secrets and variables → Actions 中添
 
 **邮件推送（可选）：**
 
-不发邮件可以跳过，用 `--no-email` 参数即可。需要邮件则配置以下 Secrets：
+默认不发邮件。需要邮件推送时，添加以下 Secrets 并在运行时加 `--email` 参数：
 
 | Secret | 说明 |
 |---|---|

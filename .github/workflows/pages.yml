@@ -38,7 +38,7 @@ jobs:
           SMTP_RECEIVER: ${{ secrets.SMTP_RECEIVER }}
           SUMMARY_DAYS: '7'
           SUMMARY_LANGUAGE: 'zh-CN'
-        run: python3 cli.py run  # add --no-email to skip email
+        run: python3 cli.py run  # add --email to enable email delivery
 
       - name: Commit and push docs
         run: |
