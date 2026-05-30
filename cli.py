@@ -50,6 +50,7 @@ def cmd_run(args: argparse.Namespace) -> None:
 
     from channels.email import EmailChannel
     from channels.file import FileChannel
+    from channels.github_pages import GitHubPagesChannel
     from processors.summarizer import SummarizeProcessor
     from storage.knowledge import KnowledgeStorage
 
@@ -64,7 +65,7 @@ def cmd_run(args: argparse.Namespace) -> None:
     pipeline = Pipeline(
         sources=sources,
         storage=KnowledgeStorage(),
-        channels=[FileChannel(), EmailChannel()],
+        channels=[FileChannel(), EmailChannel(), GitHubPagesChannel()],
         summarize_processor=SummarizeProcessor(),
         days=days,
         language=language,
