@@ -1,4 +1,4 @@
-"""Base processor interface for the Tech Pulse pipeline."""
+"""Base processor interface for the Signal pipeline."""
 
 from __future__ import annotations
 

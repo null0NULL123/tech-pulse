@@ -1,4 +1,4 @@
-"""Pipeline orchestrator for Tech Pulse.
+"""Pipeline orchestrator for Signal.
 
 Coordinates fetching, deduplication, storage, summarization, and delivery
 using the layered architecture (sources, storage, processors, channels).
@@ -20,7 +20,7 @@ from sources.base import BaseSource
 from sources.rss import RSSSource
 from storage.base import BaseStorage
 
-log = logging.getLogger("tech-pulse")
+log = logging.getLogger("signal")
 
 # ---------------------------------------------------------------------------
 # Source registry: maps source_type string -> concrete BaseSource subclass

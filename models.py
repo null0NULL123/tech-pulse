@@ -1,4 +1,4 @@
-"""Data models for Tech Pulse layered architecture.
+"""Data models for Signal layered architecture.
 
 All dataclasses used across the pipeline: fetching, processing, digest generation, and storage.
 """

@@ -1,4 +1,4 @@
-"""Command-line interface for Tech Pulse.
+"""Command-line interface for Signal.
 
 Usage::
 
@@ -18,7 +18,7 @@ from models import SourceConfig
 from pipeline import Pipeline, create_source
 from sources.base import BaseSource
 
-log = logging.getLogger("tech-pulse")
+log = logging.getLogger("signal")
 
 
 # ---------------------------------------------------------------------------
@@ -131,8 +131,8 @@ def cmd_discover(args: argparse.Namespace) -> None:
 def _build_parser() -> argparse.ArgumentParser:
     """Build the top-level argument parser with subcommands."""
     parser = argparse.ArgumentParser(
-        prog="tech-pulse",
-        description="Tech Pulse - RSS weekly digest with AI summary and email delivery",
+        prog="signal",
+        description="Signal - RSS weekly digest with AI summary and email delivery",
     )
     parser.add_argument(
         "-v", "--verbose",

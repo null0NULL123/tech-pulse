@@ -8,7 +8,7 @@ from models import Digest
 
 from .base import BaseChannel
 
-log = logging.getLogger("tech-pulse")
+log = logging.getLogger("signal")
 
 
 class FileChannel(BaseChannel):
@@ -22,9 +22,9 @@ class FileChannel(BaseChannel):
         return "file"
 
     def send(self, digest: Digest) -> bool:
-        """Save digest content to output/tech-pulse-YYYY-MM-DD.md. Returns True on success."""
+        """Save digest content to output/signal-YYYY-MM-DD.md. Returns True on success."""
         os.makedirs(self.output_dir, exist_ok=True)
-        filename = f"tech-pulse-{datetime.now().strftime('%Y-%m-%d')}.md"
+        filename = f"signal-{datetime.now().strftime('%Y-%m-%d')}.md"
         filepath = os.path.join(self.output_dir, filename)
 
         try:

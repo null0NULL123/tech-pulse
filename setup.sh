@@ -1,8 +1,8 @@
 #!/bin/bash
-# Tech Pulse - One-click setup for Termux (Android)
+# Signal - One-click setup for Termux (Android)
 set -e
 
-echo "=== Tech Pulse Setup ==="
+echo "=== Signal Setup ==="
 
 # Check Python
 if ! command -v python3 &>/dev/null; then

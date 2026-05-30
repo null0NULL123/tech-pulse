@@ -13,7 +13,7 @@ from models import Digest
 
 from .base import BaseChannel
 
-log = logging.getLogger("tech-pulse")
+log = logging.getLogger("signal")
 
 MAX_RETRIES = 3
 RETRY_DELAY = 10  # seconds
@@ -69,7 +69,7 @@ class EmailChannel(BaseChannel):
     def _build_message(self, markdown_text: str) -> MIMEMultipart:
         """Build the email message (plain text + HTML)."""
         msg = MIMEMultipart("alternative")
-        msg["Subject"] = f"Tech Pulse 周报 - {datetime.now().strftime('%Y-%m-%d')}"
+        msg["Subject"] = f"Signal 周报 - {datetime.now().strftime('%Y-%m-%d')}"
         msg["From"] = self.sender
         msg["To"] = self.receiver
 
@@ -178,13 +178,13 @@ class EmailChannel(BaseChannel):
 <head><meta charset="utf-8"></head>
 <body style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Helvetica Neue',sans-serif;max-width:680px;margin:0 auto;padding:24px;color:#333;line-height:1.7;background:#fff">
 <div style="text-align:center;margin-bottom:24px">
-  <h1 style="color:#e94560;font-size:26px;margin:0 0 8px 0;letter-spacing:1px">📡 Tech Pulse 周报</h1>
+  <h1 style="color:#e94560;font-size:26px;margin:0 0 8px 0;letter-spacing:1px">📡 Signal 周报</h1>
   <p style="color:#999;font-size:14px;margin:0">{datetime.now().strftime('%Y-%m-%d')} | AI 自动摘要</p>
 </div>
 <div style="background:#f8f9fa;border-radius:8px;padding:20px;margin-bottom:20px;border-left:4px solid #e94560">
 {body}
 </div>
 <hr style="border:none;border-top:1px solid #eee;margin-top:24px">
-<p style="color:#aaa;font-size:12px;text-align:center;margin-top:16px">由 Tech Pulse 自动生成 | Powered by AI</p>
+<p style="color:#aaa;font-size:12px;text-align:center;margin-top:16px">由 Signal 自动生成 | Powered by AI</p>
 </body>
 </html>"""

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Tech Pulse - Weekly tech blog digest with AI summarization.
+"""Signal - Weekly tech blog digest with AI summarization.
 
 Backward-compatible entry point. Delegates to the new layered CLI.
 
