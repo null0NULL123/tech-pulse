@@ -98,7 +98,7 @@ channels=[FileChannel(), EmailChannel(), WechatChannel()]
 
 ## 知识积累
 
-每次运行周报，系统会自动将文章存入本地 SQLite 数据库（`knowledge/pulse.db`），逐步构建你的技术知识库：
+每次运行周报，系统会自动将文章存入本地 SQLite 数据库（`knowledge/signal.db`），逐步构建你的技术知识库：
 
 - **文章存储**：所有抓取的文章自动入库，按 hash 去重，不会重复存储
 - **趋势追踪**：自动提取话题关键词，按周统计频率，检测上升趋势话题
@@ -106,7 +106,7 @@ channels=[FileChannel(), EmailChannel(), WechatChannel()]
 - **趋势注入**：生成周报时，系统会把历史高频话题和上升趋势作为上下文注入 LLM，让摘要能参考长期趋势，避免每次都从零开始
 
 **为什么用 SQLite + sqlite-vec？**
-- 单文件存储（`knowledge/pulse.db`），零运维，手机上直接跑
+- 单文件存储（`knowledge/signal.db`），零运维，手机上直接跑
 - 结构化查询（按时间、来源过滤）和向量搜索（语义相似度）共用一个数据库
 - sqlite-vec 是 SQLite 官方扩展，纯 C 实现，无外部依赖
 

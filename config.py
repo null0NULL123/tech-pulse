@@ -18,7 +18,7 @@ from models import SourceConfig
 
 # Paths
 DEFAULT_FEEDS_PATH = "feeds.json"
-DEFAULT_DB_PATH = "knowledge/pulse.db"
+DEFAULT_DB_PATH = "knowledge/signal.db"
 DEFAULT_OUTPUT_DIR = "output"
 DEFAULT_ENV_PATH = ".env"
 

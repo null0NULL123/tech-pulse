@@ -55,7 +55,7 @@ def test_config_constants():
         HASH_TRUNCATE_LENGTH, FETCH_MAX_WORKERS, LOCALE,
     )
     assert DEFAULT_FEEDS_PATH == "feeds.json"
-    assert DEFAULT_DB_PATH == "knowledge/pulse.db"
+    assert DEFAULT_DB_PATH == "knowledge/signal.db"
     assert DEFAULT_OUTPUT_DIR == "output"
     assert DEFAULT_LANGUAGE == "zh-CN"
     assert DEFAULT_DAYS == 7
